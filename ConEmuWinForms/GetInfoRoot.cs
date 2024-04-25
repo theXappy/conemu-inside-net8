@@ -59,7 +59,7 @@ namespace ConEmu.WinForms
 				throw new ArgumentNullException(nameof(session));
 
 			GuiMacroResult result = await session.BeginGuiMacro("GetInfo").WithParam("Root").ExecuteAsync();
-			Trace.WriteLine("[ROOT]: " + result.Response);
+			Debug.WriteLine($"[ROOT]: {result.Response}");
 			if(!result.IsSuccessful)
 				throw new InvalidOperationException("The GetInfo-Root call did not succeed.");
 			if(string.IsNullOrWhiteSpace(result.Response)) // Might yield an empty string randomly if not ready yet
