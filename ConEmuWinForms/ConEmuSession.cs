@@ -382,7 +382,6 @@ namespace ConEmu.WinForms
 		///     <para>Note that the console process might have terminated long before this moment without closing the console emulator unless <see cref="WhenConsoleProcessExits.CloseConsoleEmulator" /> were selected in the startup options.</para>
 		///     <para>For short-lived processes, this event might fire before you can start sinking it. To get notified reliably, use <see cref="WaitForConsoleEmulatorCloseAsync" /> or <see cref="ConEmuStartInfo.ConsoleEmulatorClosedEventSink" />.</para>
 		/// </summary>
-		[CanBeNull]
 		public event EventHandler ConsoleEmulatorClosed;
 
 		/// <summary>
