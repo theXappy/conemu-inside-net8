@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>bin\ConEmuWinForms.xml</DocumentationFile>
+    <NoWarn>$(NoWarn),1591,1696</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConEmu.Core" PrivateAssets="all" Version="23.7.24" />
+    <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.12.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ConEmu.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ConEmu.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Resources -->
+    <EmbeddedResource Update="Resources.resx" Generator="ResXFileCodeGenerator" LastGenOutput="Resources.Designer.cs" />
+    <Compile Update="Resources.Designer.cs" AutoGen="True" DependentUpon="Resources.resx" DesignTime="True" />
+  </ItemGroup>
+
+</Project>
