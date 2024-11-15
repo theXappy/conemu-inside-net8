@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525" Loaded="WindowLoaded">
     <Grid>
-        <local:ConEnumWpfHost d:ConsoleProcessCommandLine="echo Debug!" ConsoleProcessCommandLine="ping 8.8.8.8"/>
+        <local:ConEnumWpfHost/>
     </Grid>
 </Window>
