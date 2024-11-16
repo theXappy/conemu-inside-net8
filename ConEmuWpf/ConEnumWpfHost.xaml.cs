@@ -72,6 +72,7 @@ namespace HostingWfInWPF
             void LookForIdle(object o, AnsiStreamChunkEventArgs args)
             {
                 string str = Encoding.ASCII.GetString(args.Chunk);
+                // Get rid of ANSI coloring
                 str = Regex.Replace(str, "[\\u001b\\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]", "");
                 // Heuristic.
                 // Might fail for this input: "expression1;\r\nexpression2\r\n"
