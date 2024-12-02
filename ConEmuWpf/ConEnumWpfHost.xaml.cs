@@ -41,7 +41,14 @@ namespace HostingWfInWPF
             return StartAsync(consoleProcessCommandLine);
         }
 
-        public Task WriteInputTextAsync(string text)
+        public async Task WriteInputTextAsync(string text)
+        {
+            // Disarm existing text/expressions in the input buffer of ConEmu
+            await WriteInputTextInnerAsync(";");
+            await WriteInputTextInnerAsync(text);
+        }
+
+        private Task WriteInputTextInnerAsync(string text)
         {
             AutoResetEvent inputEchoedResetEvent = new AutoResetEvent(false);
 
@@ -49,17 +56,11 @@ namespace HostingWfInWPF
             _session.AnsiStreamChunkReceived += LookForIdle;
 
             var task = _session.WriteInputTextAsync(text);
-            if (text.EndsWith('\n') || text.EndsWith('\r'))
+            task = task.ContinueWith(_ =>
             {
-                task = task.ContinueWith(_ =>
-                {
-                    Stopwatch sw = Stopwatch.StartNew();
-                    inputEchoedResetEvent.WaitOne(TimeSpan.FromMilliseconds(1500));
-                    sw.Stop();
-                    Debug.WriteLine($"STOP WATCH FINISHED AFTER: {sw.ElapsedMilliseconds}");
-                    Dispatcher.Invoke(SendEnterKeyToControl);
-                });
-            }
+                inputEchoedResetEvent.WaitOne(TimeSpan.FromMilliseconds(1500));
+                Dispatcher.Invoke(SendEnterKeyToControl);
+            });
 
             Task waitForIdleTask = Task.Run(() =>
             {
@@ -77,7 +78,7 @@ namespace HostingWfInWPF
                 // Heuristic.
                 // Might fail for this input: "expression1;\r\nexpression2\r\n"
                 // if we got the echo for "expression1;" in a complete chunk
-                if (str.TrimEnd().EndsWith(';')) 
+                if (str.TrimEnd().EndsWith(';'))
                 {
                     inputEchoedResetEvent.Set();
                 }
