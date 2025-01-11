@@ -28,6 +28,7 @@ namespace HostingWfInWPF
         public ConEnumWpfHost()
         {
             InitializeComponent();
+            IsVisiableResetEvent = new ManualResetEvent(false);
         }
 
         public Task StartAsync(string exe, string[] args)
@@ -118,14 +119,45 @@ namespace HostingWfInWPF
             }
         }
 
-        public Task StartAsync(string consoleProcessCommandLine)
+        ManualResetEvent IsVisiableResetEvent = null;
+        AutoResetEvent inputIdleResetEvent = new AutoResetEvent(false);
+        public async Task StartAsync(string consoleProcessCommandLine)
         {
-            IsStarted = true;
-
             // Create the interop host control.
-            WindowsFormsHost host =
-                new WindowsFormsHost();
+            WindowsFormsHost host = new WindowsFormsHost();
 
+            // await on IsVisiableResetEvent
+            if (!IsVisible)
+            {
+                await Task.Run(() =>
+                {
+                    IsVisiableResetEvent.WaitOne();
+                });
+            }
+
+            StartConemuProc(consoleProcessCommandLine);
+
+
+            // Assign the MaskedTextBox control as the host control's child.
+            host.Child = conemu;
+
+            // Add the interop host control to the Grid
+            // control's collection of child controls.
+            grid1.Children.Add(host);
+
+            // For 
+            await Task.Run(() =>
+            {
+                inputIdleResetEvent.WaitOne();
+                _session.AnsiStreamChunkReceived -= LookForIdle;
+            });
+
+            IsStarted = true;
+            return;
+        }
+
+        private void StartConemuProc(string consoleProcessCommandLine)
+        {
             var sbText = new StringBuilder();
             conemu = new ConEmuControl()
             {
@@ -152,61 +184,30 @@ namespace HostingWfInWPF
                 null /** "Arial" */,
                 null /** "24" */);
 
-            //
-            // SS: Disabled 
-            //
-            //session.ConsoleProcessExited += delegate
-            //{
-            //    Match match = Regex.Match(sbText.ToString(), @"\(.*\b(?<pc>\d+)%.*?\)", RegexOptions.Multiline);
-            //    if (!match.Success)
-            //    {
-            //        labelWaitOrResult.Text = "Ping execution completed, failed to parse the result.";
-            //        labelWaitOrResult.BackColor = Color.PaleVioletRed;
-            //    }
-            //    else
-            //    {
-            //        labelWaitOrResult.Text = $"Ping execution completed, lost {match.Groups["pc"].Value} per cent of packets.";
-            //        labelWaitOrResult.BackColor = Color.Lime;
-            //    }
-            //};
-            AutoResetEvent inputIdleResetEvent = new AutoResetEvent(false);
             _session.AnsiStreamChunkReceived += LookForIdle;
 
-            //
-            // SS: Disabled 
-            //
             _session.ConsoleEmulatorClosed += (o, args) =>
             {
-                // this.Close(); 
                 ConsoleEmulatorClosed?.Invoke(this, args);
             };
+        }
 
-
-            // Assign the MaskedTextBox control as the host control's child.
-            host.Child = conemu;
-
-            // Add the interop host control to the Grid
-            // control's collection of child controls.
-            grid1.Children.Add(host);
-
-            // For 
-            Task waitForIdleTask = Task.Run(() =>
+        void LookForIdle(object o, AnsiStreamChunkEventArgs args)
+        {
+            if (args.Chunk.Length > 2 &&
+                args.Chunk[^2] == (byte)'>' &&
+                args.Chunk[^1] == (byte)' ')
             {
-                inputIdleResetEvent.WaitOne();
-                _session.AnsiStreamChunkReceived -= LookForIdle;
-            });
-            return waitForIdleTask;
-
-
-            void LookForIdle(object o, AnsiStreamChunkEventArgs args)
-            {
-                if (args.Chunk.Length > 2 &&
-                    args.Chunk[^2] == (byte)'>' &&
-                    args.Chunk[^1] == (byte)' ')
-                {
-                    inputIdleResetEvent.Set();
-                }
+                inputIdleResetEvent.Set();
             }
+        }
+
+        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (this.IsVisible)
+                IsVisiableResetEvent.Set();
+            else
+                IsVisiableResetEvent.Reset();
         }
     }
 }
