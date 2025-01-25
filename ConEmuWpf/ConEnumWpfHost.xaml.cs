@@ -126,13 +126,14 @@ namespace HostingWfInWPF
             // Create the interop host control.
             WindowsFormsHost host = new WindowsFormsHost();
 
-            // await on IsVisiableResetEvent
-            if (!IsVisible)
+            // TODO: If our control is not a child of the main window, this code is wrong.
+            var mainWindow = System.Windows.Application.Current.MainWindow;
+            if (mainWindow == null)
+                throw new Exception("Can't reason when MainWindow is null.");
+            // wait for our control be to VISISBLE and the window to NOT BE MINIMZED.
+            if (!IsVisible || mainWindow.WindowState == WindowState.Minimized)
             {
-                await Task.Run(() =>
-                {
-                    IsVisiableResetEvent.WaitOne();
-                });
+                await Task.Run(WaitUntilVisible);
             }
 
             StartConemuProc(consoleProcessCommandLine);
@@ -154,6 +155,25 @@ namespace HostingWfInWPF
 
             IsStarted = true;
             return;
+        }
+
+        private void WaitUntilVisible()
+        {
+            IsVisiableResetEvent.WaitOne();
+            // Check if the app's main window is minimized
+            while (IsWindowMinimized())
+            {
+                Debug.WriteLine("[xxx] Waiting for the main window to be restored.");
+                Thread.Sleep(100);
+            }
+            Debug.WriteLine("[xxx] Main window is restored.");
+
+            bool IsWindowMinimized()
+            {
+                bool isMainWindowMinimized = false;
+                Dispatcher.Invoke(() => { isMainWindowMinimized = (System.Windows.Application.Current.MainWindow.WindowState == WindowState.Minimized); });
+                return isMainWindowMinimized;
+            }
         }
 
         private void StartConemuProc(string consoleProcessCommandLine)
